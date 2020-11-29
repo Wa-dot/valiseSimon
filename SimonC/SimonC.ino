@@ -35,6 +35,10 @@ int bump = 0;   //Si le boutton est déjà appuyé
 
 int trueButton = 0; //Pour gérer la récupération des données et l'adapter à la difficultté
 
+//Millis
+int now_ = millis();
+int last_ = 0;
+
 //Définissions des Leds
 Led ledRouge;
 Led ledBleu;
@@ -171,6 +175,12 @@ void setup()
 
 void loop()
 {
+  //Millis
+  if ((now_ - last_) > 5000)
+  {
+    last_ = now_;
+    stateGame = 1;
+  }
 
   switch (stateGame) //Dans quel Etat le jeu est
   {
@@ -354,302 +364,302 @@ int Random(int dif)
 
   //&&&&&}
 }
-  //Enoncé des couleurs
-  int showSequence(int Tab)
+//Enoncé des couleurs
+int showSequence(int Tab)
+{
+  for (int i = 1; i <= aleaMSequence; i++) //On regarde chaque case du tableau
   {
-    for (int i = 1; i <= aleaMSequence; i++) //On regarde chaque case du tableau
-    {
-      OnButtonAndBuz(dataColor[i - 1]); //On lit les couleurs pour les afficher    &&&
-      delay(duree_pas);               //Temps de mise en route des couleurs
-      OffButtonAndBuz();              //Extinction des couleurs
-    }
+    OnButtonAndBuz(dataColor[i - 1]); //On lit les couleurs pour les afficher    &&&
+    delay(duree_pas);                 //Temps de mise en route des couleurs
+    OffButtonAndBuz();                //Extinction des couleurs
+  }
+}
+
+int pushBouton(button TReadButton, int nbbutton) //On lit chaque bouton pour voir s'ils sont positif
+{
+  ReadButton = TReadButton.read();
+  Serial.print("ReadButton=");
+  Serial.println(ReadButton);
+  if (ReadButton == 0)
+  {
+    bump = nbbutton;
+    OnButtonAndBuz(bump);
   }
 
-  int pushBouton(button TReadButton, int nbbutton) //On lit chaque bouton pour voir s'ils sont positif
+  else if (ReadButton == 1 && nbbutton == bump)
   {
-    ReadButton = TReadButton.read();
-    Serial.print("ReadButton=");
-    Serial.println(ReadButton);
-    if (ReadButton == 0)
+    OffButtonAndBuz();
+    memory[y] = bump;
+    bump = 0;
+    Serial.print("Coucou");
+    y++;
+  }
+
+  Serial.print("y:");
+  Serial.println(y - 1);
+  Serial.print("TabM:");
+  Serial.println(memory[y - 1]);
+  Serial.println("---------------------------------------------------");
+  Serial.print("aleaMSequence = ");
+  Serial.println(aleaMSequence);
+
+  if (y == aleaMSequence && y != 0)
+  {
+    stateGame = 3;
+  }
+  else
+  {
+    stateGame = 2;
+  }
+}
+
+//-------------------------------------------------------------------------------
+int testSequence() //On regarde
+{
+  for (int n = 1; n <= aleaMSequence || n <= 5; n++)
+  {
+    Serial.print("n=");
+    Serial.println(n);
+    if (memory[n - 1] == dataTab[n - 1])
     {
-      bump = nbbutton;
-      OnButtonAndBuz(bump);
+      Serial.println("memory[n] == dataTab[n]");
+      Serial.println(memory[n]);
+      Serial.println(dataTab[n]);
+      bon++;
+      if (bon == aleaMSequence)
+      {
+        Serial.println("'''''''''''''''''''''''''''''''''''''''''''''''''''''''''");
+        Serial.println(aleaMSequence);
+        reussi(bon);
+        return;
+      }
     }
 
-    else if (ReadButton == 1 && nbbutton == bump)
+    else if (memory[n] == 0)
     {
-      OffButtonAndBuz();
-      memory[y] = bump;
-      bump = 0;
-      Serial.print("Coucou");
-      y++;
-    }
-
-    Serial.print("y:");
-    Serial.println(y - 1);
-    Serial.print("TabM:");
-    Serial.println(memory[y - 1]);
-    Serial.println("---------------------------------------------------");
-    Serial.print("aleaMSequence = ");
-    Serial.println(aleaMSequence);
-
-    if (y == aleaMSequence && y != 0)
-    {
-      stateGame = 3;
+      Serial.println("memory = 0");
+      start();
+      error++;
+      Error(error);
+      return;
     }
     else
     {
-      stateGame = 2;
+      Serial.println("*************************************");
+      Serial.println("BAD");
+      Serial.print(memory[n]);
+      Serial.print(" != ");
+      Serial.println(dataTab[n]);
+      error++;
+      Error(error);
+      return;
     }
   }
+  Serial.println("End testsequence");
+}
 
-  //-------------------------------------------------------------------------------
-  int testSequence() //On regarde
+//-------------------------------------------------------------
+
+int Error(int error)
+{
+  if (/*valiseError == 0//Quand la valise est branché*/ error < 3)
   {
-    for (int n = 1; n <= aleaMSequence || n <= 5; n++)
-    {
-      Serial.print("n=");
-      Serial.println(n);
-      if (memory[n - 1] == dataTab[n - 1])
-      {
-        Serial.println("memory[n] == dataTab[n]");
-        Serial.println(memory[n]);
-        Serial.println(dataTab[n]);
-        bon++;
-        if (bon == aleaMSequence)
-        {
-          Serial.println("'''''''''''''''''''''''''''''''''''''''''''''''''''''''''");
-          Serial.println(aleaMSequence);
-          reussi(bon);
-          return;
-        }
-      }
+    aleaMSequence = 1;
 
-      else if (memory[n] == 0)
-      {
-        Serial.println("memory = 0");
-        start();
-        error++;
-        Error(error);
-        return;
-      }
-      else
-      {
-        Serial.println("*************************************");
-        Serial.println("BAD");
-        Serial.print(memory[n]);
-        Serial.print(" != ");
-        Serial.println(dataTab[n]);
-        error++;
-        Error(error);
-        return;
-      }
-    }
-    Serial.println("End testsequence");
+    Serial.print("error:");
+    Serial.println(error);
+    OnButtonAndBuz(6);
+    //simonErreur=1;
+
+    //...
+    CLIENT_DATA message = {};
+    message.dataType = CLIENT_DATA_TYPE::GAMEOVER;
+    message.data[0] = 126;
+    message.data[1] = 88;
+    vbi2c->sendData(&message);
+    //...
+    start();
+    return;
   }
-
-  //-------------------------------------------------------------
-
-  int Error(int error)
+  else if (/*valiseError == 1//Quand la valise est branché*/ error == 3)
   {
-    if (/*valiseError == 0//Quand la valise est branché*/ error < 3)
+    End.Eteindre();
+    OutWork.Allumer();
+    InWork.Eteindre();
+    OnButtonAndBuz(5);
+    stateGame = 5;
+
+    return;
+  }
+  else
+  {
+    Serial.print("Erreur 908 :");
+    Serial.println(error);
+  }
+}
+
+int reussi(int bien)
+{
+  Serial.println("Reussi");
+  if (bien == alea)
+  {
+    OnButtonAndBuz(7);
+    Serial.println("SimonGood END");
+    InWork.Eteindre();
+    OutWork.Eteindre();
+    End.Allumer();
+    stateGame = 5; //Etat de pause de la valise
+    ///...
+    CLIENT_DATA message = {};
+    message.dataType = CLIENT_DATA_TYPE::SUCCESS;
+    message.data[0] = 126;
+    message.data[1] = 88;
+    vbi2c->sendData(&message);
+    //...
+    return;
+  }
+  else
+  {
     {
-      aleaMSequence = 1;
-
-      Serial.print("error:");
-      Serial.println(error);
-      OnButtonAndBuz(6);
-      //simonErreur=1;
-
-      //...
-      CLIENT_DATA message = {};
-      message.dataType = CLIENT_DATA_TYPE::GAMEOVER;
-      message.data[0] = 126;
-      message.data[1] = 88;
-      vbi2c->sendData(&message);
-      //...
+      Serial.println("Else reussi");
+      aleaMSequence++;
       start();
       return;
     }
-    else if (/*valiseError == 1//Quand la valise est branché*/ error == 3)
-    {
-      End.Eteindre();
-      OutWork.Allumer();
-      InWork.Eteindre();
-      OnButtonAndBuz(5);
-      stateGame = 5;
-
-      return;
-    }
-    else
-    {
-      Serial.print("Erreur 908 :");
-      Serial.println(error);
-    }
   }
+}
 
-  int reussi(int bien)
+//---------------------------------------------------------------------
+
+int OnButtonAndBuz(int color)
+{
+  switch (color)
   {
-    Serial.println("Reussi");
-    if (bien == alea)
+  case 0:
+    Serial.println("Show sequence 0, erreur");
+    return;
+
+  case 1:
+    BuzzBlue.tonal();  //classe allumer le buzzer
+    ledBleu.Allumer(); //classe allumer la couleur
+    Serial.println("Show sequence bleu");
+    break;
+
+  case 2:
+    BuzzYellow.tonal(); //classe allumer le buzzer
+    ledJaune.Allumer(); //classe allumer la couleur
+    Serial.println("Show sequence jaune");
+    break;
+
+  case 3:
+    BuzzGreen.tonal(); //classe allumer le buzzer
+    ledVert.Allumer(); //classe allumer la couleur
+    Serial.println("Show sequence vert");
+    break;
+
+  case 4:
+    BuzzRed.tonal();    //classe allumer le buzzer
+    ledRouge.Allumer(); //classe allumer la couleur
+    Serial.println("Show sequence rouge");
+    break;
+
+  case 5: //game over
+    ledBleu.Allumer();
+    ErrorBuz.tonal();
+    delay(100);
+    ErrorBuz.notonal();
+
+    ledJaune.Allumer();
+    ErrorBuz.tonal();
+    delay(100);
+    ErrorBuz.notonal();
+    ledJaune.Eteindre();
+
+    ledVert.Allumer();
+    ErrorBuz.tonal();
+    delay(100);
+    ErrorBuz.notonal();
+    ledVert.Eteindre();
+
+    ledRouge.Allumer();
+    ErrorBuz.tonal();
+    delay(100);
+    ErrorBuz.notonal();
+    ledRouge.Eteindre();
+
+    delay(100);
+    ErrorBuz.tonal();
+    ledBleu.Allumer();
+    ledJaune.Allumer();
+    ledVert.Allumer();
+    ledRouge.Allumer();
+    delay(900);
+    ledBleu.Eteindre();
+    ledJaune.Eteindre();
+    ledVert.Eteindre();
+    ledRouge.Eteindre();
+    ErrorBuz.notonal();
+    break;
+
+  case 6: //Erreur
+    ErrorBuz.tonal();
+    ledBleu.Allumer();
+    ledJaune.Allumer();
+    ledVert.Allumer();
+    ledRouge.Allumer();
+    delay(200);
+    ledBleu.Eteindre();
+    ledJaune.Eteindre();
+    ledVert.Eteindre();
+    ledRouge.Eteindre();
+    ErrorBuz.notonal();
+    delay(100);
+    ErrorBuz.tonal();
+    ledBleu.Allumer();
+    ledJaune.Allumer();
+    ledVert.Allumer();
+    ledRouge.Allumer();
+    delay(200);
+    ledBleu.Eteindre();
+    ledJaune.Eteindre();
+    ledVert.Eteindre();
+    ledRouge.Eteindre();
+    ErrorBuz.notonal();
+    delay(500);
+    break;
+
+  case 7: //Win
+    int i = 1;
+    for (int t = 50; t < 21 * 50; t = t + 50)
     {
-      OnButtonAndBuz(7);
-      Serial.println("SimonGood END");
-      InWork.Eteindre();
-      OutWork.Eteindre();
-      End.Allumer();
-      stateGame = 5; //Etat de pause de la valise
-      ///...
-      CLIENT_DATA message = {};
-      message.dataType = CLIENT_DATA_TYPE::SUCCESS;
-      message.data[0] = 126;
-      message.data[1] = 88;
-      vbi2c->sendData(&message);
-      //...
-      return;
-    }
-    else
-    {
-      {
-        Serial.println("Else reussi");
-        aleaMSequence++;
-        start();
-        return;
-      }
-    }
-  }
-
-  //---------------------------------------------------------------------
-
-  int OnButtonAndBuz(int color)
-  {
-    switch (color)
-    {
-    case 0:
-      Serial.println("Show sequence 0, erreur");
-      return;
-
-    case 1:
-      BuzzBlue.tonal();  //classe allumer le buzzer
-      ledBleu.Allumer(); //classe allumer la couleur
-      Serial.println("Show sequence bleu");
-      break;
-
-    case 2:
-      BuzzYellow.tonal(); //classe allumer le buzzer
-      ledJaune.Allumer(); //classe allumer la couleur
-      Serial.println("Show sequence jaune");
-      break;
-
-    case 3:
-      BuzzGreen.tonal(); //classe allumer le buzzer
-      ledVert.Allumer(); //classe allumer la couleur
-      Serial.println("Show sequence vert");
-      break;
-
-    case 4:
-      BuzzRed.tonal();    //classe allumer le buzzer
-      ledRouge.Allumer(); //classe allumer la couleur
-      Serial.println("Show sequence rouge");
-      break;
-
-    case 5: //game over
+      tone(11, t); //pin 11
       ledBleu.Allumer();
-      ErrorBuz.tonal();
-      delay(100);
-      ErrorBuz.notonal();
-
+      delay(10);
       ledJaune.Allumer();
-      ErrorBuz.tonal();
-      delay(100);
-      ErrorBuz.notonal();
-      ledJaune.Eteindre();
-
-      ledVert.Allumer();
-      ErrorBuz.tonal();
-      delay(100);
-      ErrorBuz.notonal();
-      ledVert.Eteindre();
-
+      delay(10);
       ledRouge.Allumer();
-      ErrorBuz.tonal();
-      delay(100);
-      ErrorBuz.notonal();
-      ledRouge.Eteindre();
-
-      delay(100);
-      ErrorBuz.tonal();
-      ledBleu.Allumer();
-      ledJaune.Allumer();
+      delay(10);
       ledVert.Allumer();
-      ledRouge.Allumer();
-      delay(900);
+      delay(10);
+      noTone(11);
       ledBleu.Eteindre();
+      delay(10);
       ledJaune.Eteindre();
-      ledVert.Eteindre();
+      delay(10);
       ledRouge.Eteindre();
-      ErrorBuz.notonal();
-      break;
-
-    case 6: //Erreur
-      ErrorBuz.tonal();
-      ledBleu.Allumer();
-      ledJaune.Allumer();
-      ledVert.Allumer();
-      ledRouge.Allumer();
-      delay(200);
-      ledBleu.Eteindre();
-      ledJaune.Eteindre();
+      delay(10);
       ledVert.Eteindre();
-      ledRouge.Eteindre();
-      ErrorBuz.notonal();
-      delay(100);
-      ErrorBuz.tonal();
-      ledBleu.Allumer();
-      ledJaune.Allumer();
-      ledVert.Allumer();
-      ledRouge.Allumer();
-      delay(200);
-      ledBleu.Eteindre();
-      ledJaune.Eteindre();
-      ledVert.Eteindre();
-      ledRouge.Eteindre();
-      ErrorBuz.notonal();
-      delay(500);
-      break;
-
-    case 7: //Win
-      int i = 1;
-      for (int t = 50; t < 21 * 50; t = t + 50)
-      {
-        tone(11, t); //pin 11
-        ledBleu.Allumer();
-        delay(10);
-        ledJaune.Allumer();
-        delay(10);
-        ledRouge.Allumer();
-        delay(10);
-        ledVert.Allumer();
-        delay(10);
-        noTone(11);
-        ledBleu.Eteindre();
-        delay(10);
-        ledJaune.Eteindre();
-        delay(10);
-        ledRouge.Eteindre();
-        delay(10);
-        ledVert.Eteindre();
-      }
-      break;
     }
+    break;
   }
+}
 
-  int OffButtonAndBuz()
-  {
-    ledBleu.Eteindre();  //classe éteindre la couleur
-    ledJaune.Eteindre(); //classe éteindre la couleur
-    ledVert.Eteindre();  //classe éteindre la couleur
-    ledRouge.Eteindre(); //classe éteindre la couleur
-    BuzzBlue.notonal();  //classe éteindre le buzzer, on s'en fiche duquel on met, il s'agit du même pin
-    delay(300);
-  }
+int OffButtonAndBuz()
+{
+  ledBleu.Eteindre();  //classe éteindre la couleur
+  ledJaune.Eteindre(); //classe éteindre la couleur
+  ledVert.Eteindre();  //classe éteindre la couleur
+  ledRouge.Eteindre(); //classe éteindre la couleur
+  BuzzBlue.notonal();  //classe éteindre le buzzer, on s'en fiche duquel on met, il s'agit du même pin
+  delay(300);
+}
