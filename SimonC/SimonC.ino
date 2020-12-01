@@ -2,7 +2,7 @@
 #include "simonClass.h"              //annexe pour les classes
 
 //...
-vbi2c = new VbI2C(0x6); // adresse i²c du module
+VbI2C vbi2c = new VbI2C(0x6); // adresse i²c du module
 Wire.onReceive(handleReceive);
 Wire.onRequest(handleRequest);
 vbi2c->setCallback(handleData);
@@ -36,8 +36,7 @@ int bump = 0;   //Si le boutton est déjà appuyé
 int trueButton = 0; //Pour gérer la récupération des données et l'adapter à la difficultté
 
 //Millis
-int now_ = millis();
-int last_ = 0;
+int count = 0;
 
 //Définissions des Leds
 Led ledRouge;
@@ -167,7 +166,7 @@ void setup()
   yellowButton.Setbutton(A1);
   greenButton.Setbutton(A2);
 
-  randomSeed(analogRead(A5));
+  randomSeed(analogRead(A0));
   //Activation de la séquence:
   stateGame = 0; //remettre à 4: Tps d'attente
   Serial.println("Init done");
@@ -175,12 +174,6 @@ void setup()
 
 void loop()
 {
-  //Millis
-  if ((now_ - last_) > 5000)
-  {
-    last_ = now_;
-    stateGame = 1;
-  }
 
   switch (stateGame) //Dans quel Etat le jeu est
   {
@@ -201,6 +194,12 @@ void loop()
     pushBouton(yellowButton, 2);
     pushBouton(greenButton, 3);
     pushBouton(blueButton, 1);
+
+    if (count >= 700)
+    {
+      count =0;
+      stateGame = 1;
+    }
 
     break;
 
@@ -297,21 +296,21 @@ int Random(int dif)
   {
     for (int i = 0; i < alea; i++)
     {
-      if (dataTab[i] == 1)
+      if (dataTab[i] == 1)//réponse bleu
       {
-        dataColor[i] = 3;
+        dataColor[i] = 4;//couleur montrée vert
       }
-      else if (dataTab[i] == 2)
+      else if (dataTab[i] == 2)//jaune
       {
-        dataColor[i] = 4;
+        dataColor[i] = 3;//rouge
       }
-      else if (dataTab[i] == 3)
+      else if (dataTab[i] == 3)//vert
       {
-        dataColor[i] = 1;
+        dataColor[i] = 2;//bleu
       }
-      else if (dataTab[i] == 4)
+      else if (dataTab[i] == 4)//rouge
       {
-        dataColor[i] = 2;
+        dataColor[i] = 1;//jaune
       }
     }
   }
@@ -320,21 +319,21 @@ int Random(int dif)
   {
     for (int i = 0; i < alea; i++)
     {
-      if (dataTab[i] == 1)
+      if (dataTab[i] == 1)//réponse bleu
       {
-        dataColor[i] = 3;
+        dataColor[i] = 3;//couleur montrée vert
       }
-      else if (dataTab[i] == 2)
+      else if (dataTab[i] == 2)//jaune
       {
-        dataColor[i] = 1;
+        dataColor[i] = 1;//bleu
       }
-      else if (dataTab[i] == 3)
+      else if (dataTab[i] == 3)//vert
       {
-        dataColor[i] = 4;
+        dataColor[i] = 4;//rouge
       }
-      else if (dataTab[i] == 4)
+      else if (dataTab[i] == 4)//rouge
       {
-        dataColor[i] = 2;
+        dataColor[i] = 2;//jaune
       }
     }
   }
@@ -343,21 +342,21 @@ int Random(int dif)
   {
     for (int i = 0; i < alea; i++)
     {
-      if (dataTab[i] == 1)
+      if (dataTab[i] == 1)//bleu
       {
-        dataColor[i] = 2;
+        dataColor[i] = 2;//jaune
       }
-      else if (dataTab[i] == 2)
+      else if (dataTab[i] == 2)//jaune
       {
-        dataColor[i] = 1;
+        dataColor[i] = 4;//rouge
       }
-      else if (dataTab[i] == 3)
+      else if (dataTab[i] == 3)//vert
       {
-        dataColor[i] = 4;
+        dataColor[i] = 1;//bleu
       }
-      else if (dataTab[i] == 4)
+      else if (dataTab[i] == 4)//rouge
       {
-        dataColor[i] = 3;
+        dataColor[i] = 3;//vert
       }
     }
   }
@@ -380,8 +379,10 @@ int pushBouton(button TReadButton, int nbbutton) //On lit chaque bouton pour voi
   ReadButton = TReadButton.read();
   Serial.print("ReadButton=");
   Serial.println(ReadButton);
+  count++;
   if (ReadButton == 0)
   {
+    count = 0;
     bump = nbbutton;
     OnButtonAndBuz(bump);
   }
