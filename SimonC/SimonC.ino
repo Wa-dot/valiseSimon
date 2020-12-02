@@ -1,25 +1,20 @@
 #include "i2c-lib/Client/VB_I2C.cpp" //inclure l'annexe
 #include "simonClass.h"              //annexe pour les classes
 
-//...
-VbI2C vbi2c = new VbI2C(0x6); // adresse i²c du module
-Wire.onReceive(handleReceive);
-Wire.onRequest(handleRequest);
-vbi2c->setCallback(handleData);
-//...
+
+uint8_t difficulty;
+uint8_t start = 0;
+uint8_t echec = 0;
 
 int party_code = 0; //variable ou est stocké le code partie
-int difficulty = 2; //variable de la difficultée   ****Modifié****(0)
+//int difficulty = 2; //variable de la difficultée   ****Modifié****(0)
 
 int stateGame; //Etat du jeu: Création du tableau réponse, Montrer les couleurs, attendre une réponse ou traiter les informations
 
 const int duree_pas = 500; //Durée d'allumage des leds
 
-bool simonErreur = 0; //Erreur envoyé à la valise
 
-bool simonGood = 0; //Réussi envoyé à la valise
-
-int error = 0; //Nombre d'erreur sur le Simon: 3chances
+int error = 0; //Nombre d'erreur sur le Simon
 
 int dataTab[5];        //Tableau contenant les nombres aléatoires, les couleurs
 int dataColor[5];      //tableau contenant les couleurs qui s'afficheront
@@ -92,10 +87,12 @@ void handleData()
   SERVER_DATA_T packet = vbi2c->getData();
   if (packet->dataType == SERVER_DATA_TYPE::ABORT_GAME)
   {
+    echec = 1;
   }
   else if (packet->dataType == SERVER_DATA_TYPE::START)
   {
-    uint8_t difficulty = packet->data[0];
+    start = 1;
+    difficulty = packet->data[0];
   }
 }
 
@@ -119,7 +116,6 @@ void setup()
 {
 
   // …
-
   vbi2c = new VbI2C(0x1);
 
   Wire.onReceive(handleReceive);
@@ -463,7 +459,7 @@ int testSequence() //On regarde
 
 int Error(int error)
 {
-  if (/*valiseError == 0//Quand la valise est branché*/ error < 3)
+  if (echec == 0)//Quand la valise est branché*/ error < 3)
   {
     aleaMSequence = 1;
 
@@ -479,10 +475,11 @@ int Error(int error)
     message.data[1] = 88;
     vbi2c->sendData(&message);
     //...
+
     start();
     return;
   }
-  else if (/*valiseError == 1//Quand la valise est branché*/ error == 3)
+  else if (echec == 1)//Quand la valise est branché*/ error == 3)
   {
     End.Eteindre();
     OutWork.Allumer();
