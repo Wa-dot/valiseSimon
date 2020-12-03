@@ -99,7 +99,7 @@ void handleData()
 // Fin du block obligatoire.
 
 //Remet à 0 les variables dont on a besoin pour traiter les informations (la mémoires, le stategame...)
-void start()
+void Start()
 {
   bon = 0;
 
@@ -435,7 +435,7 @@ int testSequence() //On regarde
     else if (memory[n] == 0)
     {
       Serial.println("memory = 0");
-      start();
+      Start();
       error++;
       Error(error);
       return;
@@ -476,7 +476,7 @@ int Error(int error)
     vbi2c->sendData(&message);
     //...
 
-    start();
+    Start();
     return;
   }
   else if (echec == 1)//Quand la valise est branché*/ error == 3)
@@ -521,7 +521,7 @@ int reussi(int bien)
     {
       Serial.println("Else reussi");
       aleaMSequence++;
-      start();
+      Start();
       return;
     }
   }
