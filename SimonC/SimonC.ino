@@ -294,19 +294,19 @@ int Random(int dif)
     {
       if (dataTab[i] == 1)//réponse bleu
       {
-        dataColor[i] = 4;//couleur montrée vert
+        dataColor[i] = 4;//couleur montrée rouge
       }
       else if (dataTab[i] == 2)//jaune
       {
-        dataColor[i] = 3;//rouge
+        dataColor[i] = 3;//vert
       }
       else if (dataTab[i] == 3)//vert
       {
-        dataColor[i] = 2;//bleu
+        dataColor[i] = 2;//jaune
       }
       else if (dataTab[i] == 4)//rouge
       {
-        dataColor[i] = 1;//jaune
+        dataColor[i] = 1;//bleu
       }
     }
   }
